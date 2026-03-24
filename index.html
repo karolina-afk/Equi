@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equi Proposal</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS with Custom Color Config -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pink: {
+                            400: '#FF4D79',
+                            500: '#FF285A', // Target Shade: R255 G40 B90
+                            600: '#E62451',
+                            900: '#661024',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Three.js & RoundedBoxGeometry -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            overflow-x: hidden; 
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background-color 1s ease;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #000000; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .font-montserrat {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .text-glow {
+            text-shadow: 0 0 40px rgba(0,0,0,0.8), 0 0 80px rgba(0,0,0,1.0);
+        }
+
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.45);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 24px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="text-white selection:bg-pink-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <nav class="fixed top-0 left-0 w-full h-20 bg-black/90 backdrop-blur-md z-[60] flex items-center justify-between px-8 md:px-12 border-b border-white/10">
+        <div class="text-white font-montserrat font-bold tracking-[0.2em] text-xl">EQUI</div>
+        <button id="menu-toggle" class="relative w-8 h-8 flex flex-col items-center justify-center gap-2 focus:outline-none group">
+            <span id="menu-line-1" class="block w-8 h-[2px] bg-white transition-all duration-300"></span>
+            <span id="menu-line-2" class="block w-8 h-[2px] bg-white transition-all duration-300"></span>
+            <span id="menu-line-3" class="block w-8 h-[2px] bg-white transition-all duration-300"></span>
+        </button>
+    </nav>
+
+    <!-- Side Menu -->
+    <div id="fullscreen-menu" class="fixed top-0 right-0 w-full sm:w-[400px] h-screen bg-black/95 backdrop-blur-2xl border-l border-white/10 z-[50] flex flex-col items-start justify-center opacity-0 pointer-events-none translate-x-full transition-all duration-500">
+        <ul class="text-left space-y-6 md:space-y-8 text-lg md:text-xl font-montserrat font-light text-gray-400 pl-12">
+            <li><a href="#" class="menu-link hover:text-white hover:translate-x-2 inline-block transition-transform" data-scroll="0.0">01. The Living Labyrinth</a></li>
+            <li><a href="#" class="menu-link hover:text-white hover:translate-x-2 inline-block transition-transform" data-scroll="0.30">02. Understanding Your Needs</a></li>
+            <li><a href="#" class="menu-link hover:text-white hover:translate-x-2 inline-block transition-transform" data-scroll="0.50">03. Disruption Readiness</a></li>
+            <li><a href="#" class="menu-link hover:text-white hover:translate-x-2 inline-block transition-transform" data-scroll="0.68">04. Algorithmic Bias</a></li>
+            <li><a href="#" class="menu-link hover:text-white hover:translate-x-2 inline-block transition-transform" data-scroll="0.88">05. AI Capability</a></li>
+            <li><a href="#" class="menu-link hover:text-white hover:translate-x-2 inline-block transition-transform" data-scroll="1.12">06. Project Plan</a></li>
+            <li><a href="#" class="menu-link hover:text-white hover:translate-x-2 inline-block transition-transform" data-scroll="1.32">07. Commercials</a></li>
+            <li><a href="#" class="menu-link hover:text-pink-500 hover:translate-x-2 inline-block transition-transform" data-scroll="1.52">08. Next Steps</a></li>
+        </ul>
+    </div>
+
+    <!-- Scroll Wrapper -->
+    <div class="relative w-full h-[1200vh]">
+        
+        <div id="canvas-container"></div>
+        
+        <div id="fade-overlay" class="fixed top-0 left-0 w-full h-screen bg-black z-20 pointer-events-none opacity-0 will-change-opacity"></div>
+
+        <!-- Section 1 UI (The Maze) - Bottom Left -->
+        <div id="ui-sec-1" class="fixed top-0 left-0 w-full h-screen z-10 flex flex-col items-start justify-end pointer-events-none will-change-transform pb-24 pl-8 md:pl-24">
+            <h1 class="font-montserrat text-4xl md:text-5xl lg:text-7xl font-bold mb-4 tracking-tight text-white text-glow text-left">
+                Equi Proposal
+            </h1>
+            
+            <p class="text-base md:text-lg text-gray-300 max-w-lg font-light leading-relaxed text-glow text-left">
+                Navigating disruption: understanding social media algorithmic biases and AI readiness.
+            </p>
+        </div>
+
+        <!-- Section 2 UI (Understanding Your Needs) -->
+        <div id="ui-sec-2" class="fixed top-0 left-0 w-full h-screen z-10 flex pointer-events-none opacity-0">
+            <div class="w-[35%] hidden lg:block"></div>
+            <div class="w-full lg:w-[65%] flex items-center justify-center p-6 md:p-16 h-full">
+                <div id="content-card" class="glass-panel p-8 md:p-14 rounded-3xl w-full max-w-2xl transform translate-x-32 opacity-0 transition-all duration-1000 ease-out pointer-events-auto mt-20">
+                    
+                    <h2 class="text-pink-500 text-xs md:text-sm tracking-[0.25em] uppercase mb-4 font-bold flex items-center gap-3">
+                        <span class="w-8 h-[1px] bg-pink-500"></span>
+                        Phase 02
+                    </h2>
+                    <h1 class="text-3xl md:text-4xl font-montserrat font-bold text-white mb-6 tracking-tight">
+                        Understanding Your Needs
+                    </h1>
+                    
+                    <p class="text-gray-300 text-lg mb-10 leading-relaxed font-light">
+                        Equi has reached the end of its launch phase. The next phase requires becoming disruption-ready—not only for AI, but for any current or future disruptor.
+                    </p>
+                    
+                    <div class="space-y-5 mb-10">
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Position Equi for substantive discussions on algorithmic bias.</p>
+                        </div>
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Prepare for AI's impact on core research operations.</p>
+                        </div>
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Build organizational readiness for ongoing disruption.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-pink-900/30 to-transparent border-l-2 border-pink-500 p-6 rounded-r-xl">
+                        <p class="text-gray-300 font-light leading-relaxed text-sm md:text-base">
+                            <span class="text-white font-semibold">Our approach:</span> A structured, three-part engagement that addresses immediate needs while building lasting capability.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3 UI (Disruption Readiness Workshop) -->
+        <div id="ui-sec-3" class="fixed top-0 left-0 w-full h-screen z-10 flex pointer-events-none opacity-0">
+            <div class="w-[35%] hidden lg:block"></div>
+            <div class="w-full lg:w-[65%] flex items-center justify-center p-6 md:p-16 h-full">
+                <div id="content-card-3" class="glass-panel p-8 md:p-14 rounded-3xl w-full max-w-2xl transform translate-x-32 opacity-0 transition-all duration-1000 ease-out pointer-events-auto mt-20">
+                    
+                    <h2 class="text-pink-500 text-xs md:text-sm tracking-[0.25em] uppercase mb-4 font-bold flex items-center gap-3">
+                        <span class="w-8 h-[1px] bg-pink-500"></span>
+                        Foundation
+                    </h2>
+                    <h1 class="text-3xl md:text-4xl font-montserrat font-bold text-white mb-6 tracking-tight">
+                        Disruption Readiness Workshop
+                    </h1>
+                    
+                    <p class="text-gray-300 text-lg mb-10 leading-relaxed font-light">
+                        Leadership workshop introducing our Disruption Readiness Model and conducting an initial assessment calibrated to Equi's context.
+                    </p>
+                    
+                    <div class="space-y-5 mb-10">
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Unlock conscious thinking about disruption.</p>
+                        </div>
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Diagnostic assessment with your stakeholders.</p>
+                        </div>
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Use algorithmic bias and AI adoption as live examples.</p>
+                        </div>
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Establish shared view of where Equi stands.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-pink-900/30 to-transparent border-l-2 border-pink-500 p-6 rounded-r-xl">
+                        <p class="text-gray-300 font-light leading-relaxed text-sm md:text-base">
+                            <span class="text-white font-semibold">Outcome:</span> Strategic framing and confidence to address your priority challenges.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4 UI (Understanding Algorithmic Bias) -->
+        <div id="ui-sec-4" class="fixed top-0 left-0 w-full h-screen z-10 flex pointer-events-none opacity-0">
+            <div class="w-[35%] hidden lg:block"></div>
+            <div class="w-full lg:w-[65%] flex items-center justify-center p-6 md:p-16 h-full">
+                <div id="content-card-4" class="glass-panel p-8 md:p-14 rounded-3xl w-full max-w-2xl transform translate-x-32 opacity-0 transition-all duration-1000 ease-out pointer-events-auto mt-20">
+                    
+                    <h2 class="text-pink-500 text-xs md:text-sm tracking-[0.25em] uppercase mb-4 font-bold flex items-center gap-3">
+                        <span class="w-8 h-[1px] bg-pink-500"></span>
+                        Investigation
+                    </h2>
+                    <h1 class="text-3xl md:text-4xl font-montserrat font-bold text-white mb-6 tracking-tight">
+                        Understanding Algorithmic Bias
+                    </h1>
+                    
+                    <p class="text-gray-300 text-lg mb-10 leading-relaxed font-light">
+                        Structured investigation using the Value Pyramid methodology to establish clear, defensible evidence about algorithmic bias on social media platforms.
+                    </p>
+                    
+                    <div class="space-y-5 mb-10">
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform shrink-0"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Distinguish between coordinated behavior, platform bias, and legitimate engagement patterns.</p>
+                        </div>
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform shrink-0"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Build evidence base that withstands highest scrutiny.</p>
+                        </div>
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform shrink-0"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Establish repeatable, well-governed methodology.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-pink-900/30 to-transparent border-l-2 border-pink-500 p-6 rounded-r-xl">
+                        <p class="text-gray-300 font-light leading-relaxed text-sm md:text-base">
+                            <span class="text-white font-semibold">Outcome:</span> Credible evidence and clear positioning for key discussions on algorithmic bias.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5 UI (AI Capability Development) -->
+        <div id="ui-sec-5" class="fixed top-0 left-0 w-full h-screen z-10 flex pointer-events-none opacity-0">
+            <div class="w-[35%] hidden lg:block"></div>
+            <div class="w-full lg:w-[65%] flex items-center justify-center p-6 md:p-16 h-full">
+                <div id="content-card-5" class="glass-panel p-8 md:p-14 rounded-3xl w-full max-w-2xl transform translate-x-32 opacity-0 transition-all duration-1000 ease-out pointer-events-auto mt-20">
+                    
+                    <h2 class="text-pink-500 text-xs md:text-sm tracking-[0.25em] uppercase mb-4 font-bold flex items-center gap-3">
+                        <span class="w-8 h-[1px] bg-pink-500"></span>
+                        Acceleration
+                    </h2>
+                    <h1 class="text-3xl md:text-4xl font-montserrat font-bold text-white mb-6 tracking-tight">
+                        AI Capability & Skills Transfer
+                    </h1>
+                    
+                    <p class="text-gray-300 text-lg mb-10 leading-relaxed font-light">
+                        Embedded skills transfer helping Equi adopt AI with ownership while demonstrating tangible benefits through the algorithmic bias workstream.
+                    </p>
+                    
+                    <div class="space-y-5 mb-10">
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform shrink-0"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Map research workflow and identify AI entry points.</p>
+                        </div>
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform shrink-0"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Understand tools, governance, and risk management.</p>
+                        </div>
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform shrink-0"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Evidence benefits in real-time through live work.</p>
+                        </div>
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 group-hover:scale-150 transition-transform shrink-0"></div>
+                            <p class="text-gray-400 font-light leading-relaxed">Ensure capability stays with Equi post-engagement.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-pink-900/30 to-transparent border-l-2 border-pink-500 p-6 rounded-r-xl">
+                        <p class="text-gray-300 font-light leading-relaxed text-sm md:text-base">
+                            <span class="text-white font-semibold">Outcome:</span> Owned AI capability that accelerates research output without compromising quality or credibility.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 6 UI (Project Plan) -->
+        <div id="ui-sec-6" class="fixed top-0 left-0 w-full h-screen z-10 flex pointer-events-none opacity-0">
+            <div class="w-full flex items-center justify-center p-6 md:p-16 h-full">
+                <!-- Clean, embedded design with no background card -->
+                <div id="content-card-6" class="w-full max-w-6xl pointer-events-auto mt-20">
+                    
+                    <h2 class="text-white text-xs md:text-sm tracking-[0.25em] uppercase mb-4 font-bold flex items-center justify-center gap-3">
+                        <span class="w-8 h-[1px] bg-white"></span>
+                        Phase 04 / Execution
+                        <span class="w-8 h-[1px] bg-white"></span>
+                    </h2>
+                    <h1 class="text-3xl md:text-5xl font-montserrat font-bold text-white mb-4 tracking-tight text-center">
+                        Project Plan
+                    </h1>
+                    <p class="text-gray-400 text-lg mb-16 font-light text-center uppercase tracking-widest">
+                        Disruption Assessment Workshop
+                    </p>
+
+                    <div class="relative">
+                        <!-- Horizontal Connecting Line -->
+                        <div class="hidden md:block absolute top-[28px] left-[8%] right-[8%] h-[1px] bg-white/20"></div>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-6 gap-6 md:gap-4 relative z-10">
+                            <div class="flex flex-col items-center group cursor-default">
+                                <div class="w-14 h-14 rounded-full bg-[#111] border-2 border-pink-500 flex items-center justify-center shadow-[0_0_20px_rgba(255,40,90,0.4)] mb-5 group-hover:scale-110 transition-transform duration-300">
+                                    <span class="text-pink-500 font-bold text-lg">1</span>
+                                </div>
+                                <h3 class="text-white text-sm font-semibold text-center uppercase tracking-wider">Kick off</h3>
+                            </div>
+                            <div class="flex flex-col items-center group cursor-default">
+                                <div class="w-14 h-14 rounded-full bg-[#111] border border-white/20 flex items-center justify-center mb-5 group-hover:border-white/60 transition-colors duration-300">
+                                    <span class="text-gray-400 font-bold text-lg group-hover:text-white transition-colors duration-300">2</span>
+                                </div>
+                                <h3 class="text-gray-400 text-sm font-medium text-center group-hover:text-white transition-colors duration-300 uppercase tracking-wider">Research</h3>
+                            </div>
+                            <div class="flex flex-col items-center group cursor-default">
+                                <div class="w-14 h-14 rounded-full bg-[#111] border border-white/20 flex items-center justify-center mb-5 group-hover:border-white/60 transition-colors duration-300">
+                                    <span class="text-gray-400 font-bold text-lg group-hover:text-white transition-colors duration-300">3</span>
+                                </div>
+                                <h3 class="text-gray-400 text-sm font-medium text-center group-hover:text-white transition-colors duration-300 uppercase tracking-wider">Data<br>management</h3>
+                            </div>
+                            <div class="flex flex-col items-center group cursor-default">
+                                <div class="w-14 h-14 rounded-full bg-[#111] border border-white/20 flex items-center justify-center mb-5 group-hover:border-white/60 transition-colors duration-300">
+                                    <span class="text-gray-400 font-bold text-lg group-hover:text-white transition-colors duration-300">4</span>
+                                </div>
+                                <h3 class="text-gray-400 text-sm font-medium text-center group-hover:text-white transition-colors duration-300 uppercase tracking-wider">Data<br>collection</h3>
+                            </div>
+                            <div class="flex flex-col items-center group cursor-default">
+                                <div class="w-14 h-14 rounded-full bg-[#111] border border-white/20 flex items-center justify-center mb-5 group-hover:border-white/60 transition-colors duration-300">
+                                    <span class="text-gray-400 font-bold text-lg group-hover:text-white transition-colors duration-300">5</span>
+                                </div>
+                                <h3 class="text-gray-400 text-sm font-medium text-center group-hover:text-white transition-colors duration-300 uppercase tracking-wider">Data<br>analysis</h3>
+                            </div>
+                            <div class="flex flex-col items-center group cursor-default">
+                                <div class="w-14 h-14 rounded-full bg-[#111] border border-white/20 flex items-center justify-center mb-5 group-hover:border-white/60 transition-colors duration-300">
+                                    <span class="text-gray-400 font-bold text-lg group-hover:text-white transition-colors duration-300">6</span>
+                                </div>
+                                <h3 class="text-gray-400 text-sm font-medium text-center group-hover:text-white transition-colors duration-300 uppercase tracking-wider">Report<br>production</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 7 UI (Commercials & Partnership) -->
+        <div id="ui-sec-7" class="fixed top-0 left-0 w-full h-screen z-10 flex pointer-events-none opacity-0">
+            <div class="w-full flex items-center justify-center p-6 md:p-16 h-full">
+                <!-- Clean, embedded design with no background card -->
+                <div id="content-card-7" class="w-full max-w-5xl pointer-events-auto mt-20">
+                    
+                    <h2 class="text-pink-500 text-xs md:text-sm tracking-[0.25em] uppercase mb-4 font-bold flex items-center justify-center gap-3">
+                        <span class="w-8 h-[1px] bg-pink-500"></span>
+                        Phase 05 / Commercials
+                        <span class="w-8 h-[1px] bg-pink-500"></span>
+                    </h2>
+                    <h1 class="text-3xl md:text-5xl font-montserrat font-bold text-white mb-6 tracking-tight text-center">
+                        Commercials & Partnership
+                    </h1>
+                    <p class="text-gray-300 text-lg mb-12 font-light text-center max-w-3xl mx-auto leading-relaxed">
+                        We believe in building lasting relationships. This engagement is designed to establish capability that continues beyond our direct involvement.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                        <div class="bg-gradient-to-b from-pink-900/40 to-black/60 border border-pink-500/50 p-8 rounded-2xl flex flex-col relative overflow-hidden shadow-[0_0_30px_rgba(255,40,90,0.15)] group hover:shadow-[0_0_40px_rgba(255,40,90,0.3)] transition-all duration-300 transform hover:-translate-y-1">
+                            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-400 to-pink-600"></div>
+                            <h3 class="text-pink-400 font-bold tracking-widest uppercase text-sm mb-2">Option 1</h3>
+                            <h4 class="text-white text-2xl md:text-3xl font-semibold mb-4">Full Disruption Assessment & Readiness</h4>
+                            <div class="mt-8 pt-6 border-t border-pink-500/20">
+                                <span class="text-4xl md:text-5xl font-black text-white">£70K</span>
+                            </div>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 p-8 rounded-2xl flex flex-col hover:bg-white/10 transition-all duration-300 transform hover:-translate-y-1">
+                            <h3 class="text-gray-400 font-bold tracking-widest uppercase text-sm mb-2">Option 2</h3>
+                            <h4 class="text-gray-200 text-2xl md:text-3xl font-semibold mb-4">AI Algorithmic Report</h4>
+                            <div class="mt-8 pt-6 border-t border-white/10">
+                                <span class="text-4xl md:text-5xl font-black text-gray-300">£35K</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 8 UI (Next Steps) -->
+        <div id="ui-sec-8" class="fixed top-0 left-0 w-full h-screen z-10 flex pointer-events-none opacity-0">
+            <div class="w-full flex items-center justify-center p-6 md:p-16 h-full">
+                <!-- Clean, embedded design with no background card -->
+                <div id="content-card-8" class="w-full max-w-4xl pointer-events-auto flex flex-col items-center text-center mt-20">
+                    
+                    <h2 class="text-white text-xs md:text-sm tracking-[0.25em] uppercase mb-4 font-bold flex items-center justify-center gap-3">
+                        <span class="w-8 h-[1px] bg-white"></span>
+                        Phase 06 / Conclusion
+                        <span class="w-8 h-[1px] bg-white"></span>
+                    </h2>
+                    
+                    <h3 class="text-4xl md:text-6xl font-montserrat font-bold text-white mb-10 tracking-tight">Proposed next steps</h3>
+                    
+                    <div class="space-y-8 text-left w-full max-w-3xl mx-auto mb-10">
+                        <div class="flex items-start gap-4">
+                            <div class="w-2 h-2 rounded-full bg-pink-500 mt-2.5 shrink-0 shadow-[0_0_10px_rgba(255,40,90,0.8)]"></div>
+                            <p class="text-gray-300 text-lg md:text-xl font-light leading-relaxed"><strong class="text-white font-medium">Your response</strong> — Tell us what resonates and what questions it raises. We can adapt the scope and investment approach to what is practically achievable.</p>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-2 h-2 rounded-full bg-pink-500 mt-2.5 shrink-0 shadow-[0_0_10px_rgba(255,40,90,0.8)]"></div>
+                            <p class="text-gray-300 text-lg md:text-xl font-light leading-relaxed"><strong class="text-white font-medium">A chemistry test</strong> — A focused conversation — in person where possible — to refine the scope, agree the investment approach, and confirm how you would like to present this to potential funders.</p>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-2 h-2 rounded-full bg-pink-500 mt-2.5 shrink-0 shadow-[0_0_10px_rgba(255,40,90,0.8)]"></div>
+                            <p class="text-gray-300 text-lg md:text-xl font-light leading-relaxed"><strong class="text-white font-medium">Mobilisation</strong> — We can mobilise a team within weeks of agreement.</p>
+                        </div>
+                    </div>
+                    <button class="px-10 py-4 rounded-full bg-white text-black font-bold text-lg hover:bg-pink-500 hover:text-white hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,40,90,0.5)] pointer-events-auto">
+                        Get in Touch
+                    </button>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 3D Application Logic -->
+    <script>
+        const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+
+        window.onload = function() {
+            // --- Scene Setup ---
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.008);
+
+            const camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.set(45, 45, 45); 
+            camera.lookAt(0, 0, 0);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // --- Lighting ---
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            dirLight.position.set(30, 60, -10);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 150;
+            dirLight.shadow.camera.left = -40;
+            dirLight.shadow.camera.right = 40;
+            dirLight.shadow.camera.top = 40;
+            dirLight.shadow.camera.bottom = -40;
+            dirLight.shadow.bias = -0.0005;
+            scene.add(dirLight);
+
+            const fillLight = new THREE.DirectionalLight(0x203040, 0.4);
+            fillLight.position.set(-30, 20, 30);
+            scene.add(fillLight);
+
+            // --- Grid Geometry (23x23) ---
+            const gridSize = 23;
+            const cubeSize = 0.67375; 
+            const spacing = 1.0;
+            const offset = (gridSize * spacing) / 2 - (spacing / 2);
+            
+            const cubes = [];
+            const gridGroup = new THREE.Group();
+            scene.add(gridGroup);
+
+            // Using RoundedBoxGeometry for softer edges
+            const geometry = new THREE.RoundedBoxGeometry(cubeSize, cubeSize, cubeSize, 3, 0.03);
+            
+            const colors = [];
+            const posAttribute = geometry.attributes.position;
+            const colorDark = new THREE.Color(0x1a1a1a); 
+            const colorLight = new THREE.Color(0xdadada); 
+
+            for (let i = 0; i < posAttribute.count; i++) {
+                const y = posAttribute.getY(i);
+                const t = (y + cubeSize / 2) / cubeSize;
+                const c = colorDark.clone().lerp(colorLight, t);
+                colors.push(c.r, c.g, c.b);
+            }
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            const baseMaterial = new THREE.MeshStandardMaterial({ 
+                vertexColors: true, 
+                roughness: 0.2,
+                metalness: 0.4
+            });
+
+            // --- Phase 1: Maze Path ---
+            const pathCoords = [];
+            let currentX = 3;
+            let currentZ = 3;
+            pathCoords.push({x: currentX, z: currentZ});
+            
+            const moves = [
+                {dx: 4, dz: 0}, {dx: 0, dz: 4}, {dx: -2, dz: 0}, {dx: 0, dz: 5},
+                {dx: 8, dz: 0}, {dx: 0, dz: -4}, {dx: 5, dz: 0}, {dx: 0, dz: 11},
+                {dx: -9, dz: 0}, {dx: 0, dz: 3}, {dx: -5, dz: 0}
+            ];
+            
+            moves.forEach(m => {
+                let steps = Math.abs(m.dx || m.dz);
+                for(let i=0; i<steps; i++) {
+                    if(m.dx > 0) currentX++;
+                    else if(m.dx < 0) currentX--;
+                    else if(m.dz > 0) currentZ++;
+                    else if(m.dz < 0) currentZ--;
+                    
+                    currentX = clamp(currentX, 0, gridSize - 1);
+                    currentZ = clamp(currentZ, 0, gridSize - 1);
+                    
+                    let last = pathCoords[pathCoords.length-1];
+                    if (last.x !== currentX || last.z !== currentZ) {
+                        pathCoords.push({x: currentX, z: currentZ});
+                    }
+                }
+            });
+
+            function isPathCell(gx, gz) {
+                return pathCoords.some(p => p.x === gx && p.z === gz);
+            }
+
+            function getDistToPath(gx, gz) {
+                let minDist = Infinity;
+                for (let p of pathCoords) {
+                    let d = Math.sqrt(Math.pow(gx - p.x, 2) + Math.pow(gz - p.z, 2));
+                    if (d < minDist) minDist = d;
+                }
+                return minDist;
+            }
+
+            for (let x = 0; x < gridSize; x++) {
+                for (let z = 0; z < gridSize; z++) {
+                    const material = baseMaterial.clone(); 
+                    const mesh = new THREE.Mesh(geometry, material);
+                    
+                    const posX = (x * spacing) - offset;
+                    const posZ = (z * spacing) - offset;
+                    
+                    mesh.position.set(posX, 0, posZ);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    
+                    cubes.push({
+                        mesh: mesh,
+                        gridX: x,
+                        gridZ: z,
+                        isPath: isPathCell(x, z),
+                        distToPath: getDistToPath(x, z),
+                        baseX: posX,
+                        baseZ: posZ,
+                        currentHeight: 0.5 
+                    });
+
+                    gridGroup.add(mesh);
+                }
+            }
+
+            const worldPath = pathCoords.map(p => {
+                return new THREE.Vector3((p.x * spacing) - offset, 0, (p.z * spacing) - offset);
+            });
+
+            // --- Phase 4 Network Nodes & Connections ---
+            const nodes = [
+                {x: 5, z: 5, h: 4}, {x: 9, z: 4, h: 6}, {x: 15, z: 6, h: 3},
+                {x: 4, z: 11, h: 5}, {x: 10, z: 12, h: 4}, {x: 16, z: 13, h: 5},
+                {x: 6, z: 17, h: 3}, {x: 12, z: 18, h: 6}, {x: 17, z: 17, h: 4},
+                {x: 8, z: 9, h: 5}, {x: 13, z: 8, h: 4}, {x: 11, z: 15, h: 5}
+            ];
+            
+            const edges = [
+                [0,3], [3,9], [9,11], [11,7], [7,5], [5,2], [2,10], [10,1], 
+                [1,4], [4,8], [8,6], [6,0], [3,6], [9,4], [11,8], [1,10]
+            ];
+
+            const lineGeo = new THREE.BufferGeometry();
+            const linePositions = new Float32Array(edges.length * 6);
+            lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xff285a, transparent: true, opacity: 0.0 });
+            const linesMesh = new THREE.LineSegments(lineGeo, lineMat);
+            gridGroup.add(linesMesh);
+
+            // --- Phase 5 Ascending Looping Staircase ---
+            const stairsA = [];
+            for(let i=0; i<=8; i++) stairsA.push({x: 6+i, z: 14-i, h: 1.0 + i*0.6, seg: 'A', idx: i});
+            const stairsB = [];
+            for(let i=0; i<=8; i++) stairsB.push({x: 12-i, z: 8+i, h: 1.0 + i*0.6, seg: 'B', idx: i});
+
+            // --- The Pink Ball ---
+            const ballRadius = 0.50; 
+            const ballGeometry = new THREE.SphereGeometry(ballRadius, 32, 32);
+            const ballMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xff285a, 
+                roughness: 0.1,
+                metalness: 0.6,
+                emissive: 0xff285a,
+                emissiveIntensity: 0.5
+            });
+            const ball = new THREE.Mesh(ballGeometry, ballMaterial);
+            ball.castShadow = true;
+            ball.receiveShadow = true;
+            scene.add(ball);
+
+            const ballLight = new THREE.PointLight(0xff285a, 0.8, 6);
+            ball.add(ballLight);
+
+            // --- Hero Section Moving Light ---
+            const heroSpotlight = new THREE.SpotLight(0xffffff, 0);
+            heroSpotlight.position.set(0, 20, 0);
+            heroSpotlight.angle = Math.PI / 5;
+            heroSpotlight.penumbra = 0.8;
+            heroSpotlight.decay = 2;
+            heroSpotlight.distance = 100; 
+            scene.add(heroSpotlight);
+            scene.add(heroSpotlight.target);
+
+            // --- Pre-allocated Memory for GC performance ---
+            const tempVec3 = new THREE.Vector3();
+            const currentBgColor = new THREE.Color();
+            const tempColor1 = new THREE.Color();
+            const tempColor2 = new THREE.Color();
+            const tempNodeColor = new THREE.Color();
+            const tempStairColor = new THREE.Color();
+
+            // Colors (Darkened for cinematic effect, matched with requested shade)
+            const emissiveDark = new THREE.Color(0x000000);
+            const emissivePink = new THREE.Color(0xff285a).multiplyScalar(1.2); 
+            const colorWhite = new THREE.Color(0xffffff).multiplyScalar(0.5);
+            
+            const colorGrayBase = new THREE.Color(0x3a3a3a).multiplyScalar(0.25);  
+            const colorLightPink = new THREE.Color(0xffb6c1).multiplyScalar(0.4); 
+            const colorAmber2 = new THREE.Color(0xE6BE98).multiplyScalar(0.45);    
+            const colorAmber3 = new THREE.Color(0xF5D6B8).multiplyScalar(0.5);    
+
+            const colorNodeAccent = new THREE.Color(0xff285a).multiplyScalar(0.7);
+            const colorNodeGlow = new THREE.Color(0xff285a).multiplyScalar(0.25);
+            const colorPinkAccent = new THREE.Color(0xff285a).multiplyScalar(0.4);
+            const colorDarkGreyBg = new THREE.Color(0x161616); 
+
+            const stairTargetColors = [];
+            for(let i=0; i<=8; i++) {
+                stairTargetColors.push(new THREE.Color().lerpColors(colorPinkAccent, colorWhite, i / 8));
+            }
+
+            // --- Tracking & Navigation Variables ---
+            const clock = new THREE.Clock();
+            let targetProgress = 0; 
+            let progress = 0;       
+
+            // Menu toggle logic
+            const menuToggle = document.getElementById('menu-toggle');
+            const fullscreenMenu = document.getElementById('fullscreen-menu');
+            const menuLinks = fullscreenMenu.querySelectorAll('.menu-link');
+            const line1 = document.getElementById('menu-line-1');
+            const line2 = document.getElementById('menu-line-2');
+            const line3 = document.getElementById('menu-line-3');
+            let isMenuOpen = false;
+
+            menuToggle.addEventListener('click', () => {
+                isMenuOpen = !isMenuOpen;
+                if (isMenuOpen) {
+                    fullscreenMenu.classList.remove('opacity-0', 'pointer-events-none', 'translate-x-full');
+                    fullscreenMenu.classList.add('opacity-100', 'pointer-events-auto', 'translate-x-0');
+                    line1.style.transform = 'translateY(10px) rotate(45deg)';
+                    line2.style.opacity = '0';
+                    line3.style.transform = 'translateY(-10px) rotate(-45deg)';
+                } else {
+                    fullscreenMenu.classList.add('opacity-0', 'pointer-events-none', 'translate-x-full');
+                    fullscreenMenu.classList.remove('opacity-100', 'pointer-events-auto', 'translate-x-0');
+                    line1.style.transform = 'none';
+                    line2.style.opacity = '1';
+                    line3.style.transform = 'none';
+                }
+            });
+
+            menuLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetProg = parseFloat(link.getAttribute('data-scroll'));
+                    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                    window.scrollTo({
+                        top: (targetProg / 1.6) * maxScroll,
+                        behavior: 'smooth'
+                    });
+                    menuToggle.click(); 
+                });
+            });
+
+            window.addEventListener('scroll', () => {
+                const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                targetProgress = clamp((window.scrollY / maxScroll) * 1.6, 0, 1.6); 
+            });
+
+            const uiSections = [
+                document.getElementById('ui-sec-1'), document.getElementById('ui-sec-2'),
+                document.getElementById('ui-sec-3'), document.getElementById('ui-sec-4'),
+                document.getElementById('ui-sec-5'), document.getElementById('ui-sec-6'),
+                document.getElementById('ui-sec-7'), document.getElementById('ui-sec-8')
+            ];
+            
+            const contentCards = [
+                null, document.getElementById('content-card'), document.getElementById('content-card-3'),
+                document.getElementById('content-card-4'), document.getElementById('content-card-5'),
+                document.getElementById('content-card-6'), document.getElementById('content-card-7'),
+                document.getElementById('content-card-8')
+            ];
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Timelines
+            const T_FLATTEN_END = 0.05;
+            const T_ROLL_START = 0.05;
+            const T_ROLL_END = 0.25;
+
+            const T_TRANS1_FADE_START = 0.25;
+            const T_TRANS1_MID = 0.30; 
+            const T_TRANS1_FADE_END = 0.32;
+            
+            const T_CARD1_IN = 0.30;
+            const T_CARD1_OUT = 0.40;
+            
+            const T_ELEVATOR_START = 0.40;
+            const T_ELEVATOR_MID = 0.44; 
+            const T_ELEVATOR_END = 0.48;
+            
+            const T_PYRAMID_START = 0.47;
+            const T_LAYER1 = 0.48;
+            const T_LAYER2 = 0.49;
+            const T_LAYER3 = 0.50;
+            const T_LAYER4 = 0.51;
+            const T_ROLL_DOWN_START = 0.51;
+            const T_ROLL_DOWN_END = 0.52;
+            
+            const T_CARD2_IN = 0.50;
+            const T_CARD2_OUT = 0.60;
+
+            const T_DISSOLVE_L4 = 0.60;
+            const T_DISSOLVE_L3 = 0.61;
+            const T_DISSOLVE_L2 = 0.62;
+            const T_DISSOLVE_L1 = 0.63;
+            const T_DISSOLVE_END = 0.64;
+            
+            const T_NODES_RISE = 0.63;
+            const T_LINES_APPEAR = 0.68;
+            const T_CARD3_IN = 0.68;
+            const T_CARD3_OUT = 0.80;
+
+            const T_LINES_FADE = 0.80;
+            const T_NODES_LOWER = 0.81;
+            const T_NODES_LOWER_END = 0.84;
+
+            const T_STAIRS_START = 0.83;
+            
+            // Phase 5 (Card 4)
+            const T_CARD4_IN = 0.88;
+            
+            // Grid Fade / Drop out Timeline
+            const T_COLLAPSE_START = 1.02;
+            const T_COLLAPSE_END = 1.10;
+            
+            // Scroll Timeline Maps (Phases 5 to 8)
+            const T_SCROLL_5_6_START = 1.02;
+            const T_SCROLL_5_6_END = 1.12;
+            
+            const T_SCROLL_6_7_START = 1.22;
+            const T_SCROLL_6_7_END = 1.32;
+
+            const T_SCROLL_7_8_START = 1.42;
+            const T_SCROLL_7_8_END = 1.52;
+
+            let currentBallProgress1 = 0; 
+            let phase5BallTime = 0;
+            let ballTime = 0;
+            let currentPhase = 1;
+
+            // --- Animation Loop ---
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                const delta = clamp(clock.getDelta(), 0, 0.1);
+                const time = clock.getElapsedTime();
+
+                // Smooth scroll interpolation
+                const diff = targetProgress - progress;
+                progress += diff * 0.05;
+
+                // --- Spotlight Animation ---
+                let lightFade = 1.0;
+                if (progress >= T_COLLAPSE_START) {
+                    lightFade = 1.0 - clamp((progress - T_COLLAPSE_START) / (T_COLLAPSE_END - T_COLLAPSE_START), 0, 1);
+                }
+                heroSpotlight.intensity = lightFade * 3.5; 
+                heroSpotlight.position.x = gridGroup.position.x + Math.sin(time * 0.5) * 14;
+                heroSpotlight.position.y = gridGroup.position.y + 20;
+                heroSpotlight.position.z = gridGroup.position.z + Math.cos(time * 0.3) * 14;
+                
+                heroSpotlight.target.position.set(
+                    gridGroup.position.x + Math.sin(time * 0.5 + 0.5) * 8,
+                    gridGroup.position.y,
+                    gridGroup.position.z + Math.cos(time * 0.3 + 0.5) * 8
+                );
+
+                // -----------------------------------------------------------------
+                // UI LOGIC (Opacity & Transforms)
+                // -----------------------------------------------------------------
+                
+                if (progress < T_FLATTEN_END) {
+                    const slideProgress = clamp(progress / T_FLATTEN_END, 0, 1); 
+                    const easeSlide = 1 - Math.pow(1 - slideProgress, 3);
+                    uiSections[0].style.transform = `translateY(-${easeSlide * 100}vh)`;
+                    uiSections[0].style.opacity = 1 - slideProgress;
+                } else {
+                    uiSections[0].style.opacity = 0;
+                }
+
+                function processCard(cardIdx, timeIn, timeOut) {
+                    if (progress >= timeIn && (timeOut ? progress <= timeOut : true)) {
+                        uiSections[cardIdx].style.opacity = 1;
+                        const pIn = clamp((progress - timeIn) / 0.04, 0, 1);
+                        const easeOutIn = 1 - Math.pow(1 - pIn, 3);
+                        let fadeOut = 1;
+                        if (timeOut) fadeOut = clamp((timeOut - progress) / 0.02, 0, 1);
+                        
+                        contentCards[cardIdx].style.opacity = easeOutIn * fadeOut;
+                        let dist = (1 - easeOutIn) * 50;
+                        contentCards[cardIdx].style.transform = `translateX(${dist}px)`;
+                        uiSections[cardIdx].style.transform = 'none';
+                    } else {
+                        uiSections[cardIdx].style.opacity = 0;
+                    }
+                }
+
+                function processScrollCard(cardIdx, timeInStart, timeInEnd, timeOutStart, timeOutEnd) {
+                    if (progress >= timeInStart && (timeOutEnd ? progress <= timeOutEnd : true)) {
+                        uiSections[cardIdx].style.opacity = 1;
+                        let yOffset = 0; 
+                        
+                        if (progress < timeInEnd) {
+                            let t = clamp((progress - timeInStart) / (timeInEnd - timeInStart), 0, 1);
+                            t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+                            yOffset = 100 - (t * 100);
+                        } else if (timeOutStart && progress > timeOutStart) {
+                            let t = clamp((progress - timeOutStart) / (timeOutEnd - timeOutStart), 0, 1);
+                            t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+                            yOffset = -(t * 100);
+                        }
+                        
+                        uiSections[cardIdx].style.transform = `translateY(${yOffset}vh)`;
+                        contentCards[cardIdx].style.opacity = 1;
+                        contentCards[cardIdx].style.transform = 'none';
+                    } else {
+                        uiSections[cardIdx].style.opacity = 0;
+                        uiSections[cardIdx].style.transform = `translateY(100vh)`;
+                    }
+                }
+
+                processCard(1, T_CARD1_IN, T_ELEVATOR_START);
+                processCard(2, T_CARD2_IN, T_DISSOLVE_L4);
+                processCard(3, T_CARD3_IN, T_STAIRS_START);
+
+                // Card 4: Slide in from right initially, then scrolls up later
+                if (progress >= T_CARD4_IN && progress <= T_SCROLL_5_6_END) {
+                    uiSections[4].style.opacity = 1;
+                    
+                    const pIn = clamp((progress - T_CARD4_IN) / 0.04, 0, 1);
+                    const easeOutIn = 1 - Math.pow(1 - pIn, 3);
+                    contentCards[4].style.opacity = easeOutIn;
+                    contentCards[4].style.transform = `translateX(${(1 - easeOutIn) * 50}px)`;
+                    
+                    let yOffset = 0;
+                    if (progress > T_SCROLL_5_6_START) {
+                        let t = clamp((progress - T_SCROLL_5_6_START) / (T_SCROLL_5_6_END - T_SCROLL_5_6_START), 0, 1);
+                        t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+                        yOffset = -(t * 100);
+                    }
+                    uiSections[4].style.transform = `translateY(${yOffset}vh)`;
+                } else {
+                    uiSections[4].style.opacity = 0;
+                }
+
+                processScrollCard(5, T_SCROLL_5_6_START, T_SCROLL_5_6_END, T_SCROLL_6_7_START, T_SCROLL_6_7_END);
+                processScrollCard(6, T_SCROLL_6_7_START, T_SCROLL_6_7_END, T_SCROLL_7_8_START, T_SCROLL_7_8_END);
+                processScrollCard(7, T_SCROLL_7_8_START, T_SCROLL_7_8_END, null, null);
+
+
+                // -----------------------------------------------------------------
+                // BACKGROUND COLOR TRANSITION
+                // -----------------------------------------------------------------
+                if (progress >= T_COLLAPSE_START) {
+                    let tBg = clamp((progress - T_COLLAPSE_START) / (T_SCROLL_5_6_END - T_COLLAPSE_START), 0, 1);
+                    currentBgColor.lerpColors(emissiveDark, colorDarkGreyBg, tBg);
+                    document.body.style.backgroundColor = '#' + currentBgColor.getHexString();
+                    scene.fog.color.copy(currentBgColor);
+                    
+                    let canvasFade = clamp((progress - (T_COLLAPSE_END - 0.02)) / 0.04, 0, 1);
+                    container.style.opacity = 1.0 - canvasFade;
+                } else {
+                    document.body.style.backgroundColor = '#000000';
+                    scene.fog.color.setHex(0x000000);
+                    container.style.opacity = 1.0;
+                }
+
+                // -----------------------------------------------------------------
+                // ELEVATOR LOGIC & PHASE TOGGLING
+                // -----------------------------------------------------------------
+                if (progress < T_TRANS1_MID) currentPhase = 1;
+                else if (progress >= T_TRANS1_MID && progress < T_ELEVATOR_MID) currentPhase = 2;
+                else currentPhase = 3; 
+
+                let elevatorY = 0;
+                if (progress >= T_ELEVATOR_START && progress < T_ELEVATOR_MID) {
+                    const dropProgress = clamp((progress - T_ELEVATOR_START)/(T_ELEVATOR_MID - T_ELEVATOR_START), 0, 1);
+                    elevatorY = THREE.MathUtils.lerp(0, -35, dropProgress * dropProgress); 
+                } else if (progress >= T_ELEVATOR_MID && progress <= T_ELEVATOR_END) {
+                    const riseProgress = clamp((progress - T_ELEVATOR_MID)/(T_ELEVATOR_END - T_ELEVATOR_MID), 0, 1);
+                    elevatorY = THREE.MathUtils.lerp(-35, 0, 1 - Math.pow(1 - riseProgress, 2)); 
+                }
+
+                // Phase 6 Grid Drop/Collapse
+                let gridCollapseScale = 1.0;
+                let phase6Drop = 0;
+                if (progress >= T_COLLAPSE_START) {
+                    let dropP = clamp((progress - T_COLLAPSE_START) / (T_COLLAPSE_END - T_COLLAPSE_START), 0, 1);
+                    let easeDrop = dropP * dropP * dropP; 
+                    phase6Drop = -100 * easeDrop; 
+                    gridCollapseScale = 1.0 - easeDrop;
+                }
+
+                let baseLevelY = 0;
+                if (progress >= T_TRANS1_MID) {
+                    baseLevelY = -40;
+                }
+
+                if (currentPhase === 1) {
+                    gridGroup.position.set(0, 0, 0); 
+                } else if (currentPhase === 2 || currentPhase === 3) {
+                    gridGroup.position.set(-8, baseLevelY + elevatorY + phase6Drop, 8);
+                }
+
+                // Static Main Camera 
+                camera.position.set(45, 45 + baseLevelY + phase6Drop, 45);
+                camera.lookAt(0, baseLevelY + phase6Drop, 0);
+
+
+                let effL1 = 0, effL2 = 0, effL3 = 0;
+                if (currentPhase === 3) {
+                    let tL1 = clamp((progress - T_PYRAMID_START)/(T_LAYER1 - T_PYRAMID_START), 0, 1);
+                    let tL2 = clamp((progress - T_LAYER1)/(T_LAYER2 - T_LAYER1), 0, 1);
+                    let tL3 = clamp((progress - T_LAYER2)/(T_LAYER3 - T_LAYER2), 0, 1);
+
+                    let dL3 = 1 - clamp((progress - T_DISSOLVE_L3)/(T_DISSOLVE_L2 - T_DISSOLVE_L3), 0, 1);
+                    let dL2 = 1 - clamp((progress - T_DISSOLVE_L2)/(T_DISSOLVE_L1 - T_DISSOLVE_L2), 0, 1);
+                    let dL1 = 1 - clamp((progress - T_DISSOLVE_L1)/(T_DISSOLVE_END - T_DISSOLVE_L1), 0, 1);
+
+                    tL1 = 1 - Math.pow(1 - tL1, 3); tL2 = 1 - Math.pow(1 - tL2, 3); 
+                    tL3 = 1 - Math.pow(1 - tL3, 3);
+                    dL3 = dL3 * dL3 * (3 - 2 * dL3); 
+                    dL2 = dL2 * dL2 * (3 - 2 * dL2); dL1 = dL1 * dL1 * (3 - 2 * dL1);
+
+                    effL1 = Math.min(tL1, dL1);
+                    effL2 = Math.min(tL2, dL2);
+                    effL3 = Math.min(tL3, dL3);
+                }
+
+                // -----------------------------------------------------------------
+                // CUBES & TERRAIN LOGIC
+                // -----------------------------------------------------------------
+                
+                let pathFadeOut = 0;
+                if (progress > T_ROLL_END) {
+                    pathFadeOut = clamp((progress - T_ROLL_END) / (T_TRANS1_MID - T_ROLL_END), 0, 1);
+                }
+
+                cubes.forEach(c => {
+                    let targetHeight = 0.5;
+
+                    if (currentPhase === 1) {
+                        const tX = time * (Math.PI * 2 / 60.0);
+                        const tZ = time * (Math.PI * 2 / 70.0);
+                        const waveX = Math.sin(c.gridX * 0.5 + tX);
+                        const waveZ = Math.cos(c.gridZ * 0.5 - tZ);
+                        const wallPattern = Math.max(Math.pow(Math.abs(waveX), 8), Math.pow(Math.abs(waveZ), 8));
+                        const fluidHeight = 1.0 + wallPattern * 3.0;
+                        
+                        targetHeight = fluidHeight;
+                        
+                        let phase1Flatten = clamp(progress / T_FLATTEN_END, 0, 1);
+                        phase1Flatten = 1 - Math.pow(1 - phase1Flatten, 3); 
+
+                        if (c.isPath) {
+                            targetHeight = 1.0 + wallPattern * 0.2;
+                            targetHeight = THREE.MathUtils.lerp(targetHeight, 0.5, phase1Flatten);
+                            // Path glows brightly and fades to dark seamlessly as you scroll to Phase 2
+                            tempColor1.lerpColors(emissivePink, emissiveDark, pathFadeOut);
+                            c.mesh.material.emissive.copy(tempColor1);
+                        } else {
+                            targetHeight = THREE.MathUtils.lerp(targetHeight, 1.5, phase1Flatten);
+                            
+                            // Reflective pink glow on adjacent walls
+                            if (c.distToPath <= 3.0) {
+                                let glowIntensity = Math.max(0, 1.0 - (c.distToPath / 3.0)) * 0.45; 
+                                tempColor1.lerpColors(emissiveDark, emissivePink, glowIntensity);
+                                tempColor2.lerpColors(tempColor1, emissiveDark, pathFadeOut);
+                                c.mesh.material.emissive.copy(tempColor2);
+                            } else {
+                                c.mesh.material.emissive.copy(emissiveDark);
+                            }
+                        }
+                    } 
+                    else if (currentPhase === 2) {
+                        const t1 = time * 0.4;
+                        const t2 = time * 0.7;
+                        const wave1 = Math.sin(c.gridX * 0.2 + t1) * Math.cos(c.gridZ * 0.2 - t1);
+                        const wave2 = Math.sin(c.gridX * 0.4 - t2) * Math.cos(c.gridZ * 0.4 + t2);
+                        
+                        targetHeight = 1.2 + (wave1 * 1.2) + (wave2 * 0.6);
+                        c.mesh.material.emissive.copy(emissiveDark);
+                    }
+                    else if (currentPhase === 3) {
+                        let d = Math.max(Math.abs(c.gridX - 11), Math.abs(c.gridZ - 11));
+                        let pHeight = 0.5; 
+                        
+                        if (d <= 5) { 
+                            pHeight = THREE.MathUtils.lerp(0.5, 1.5, effL1);
+                            tempColor2.lerpColors(emissiveDark, colorPinkAccent, effL1);
+                        }
+                        if (d <= 3) { 
+                            pHeight = THREE.MathUtils.lerp(pHeight, 3.0, effL2);
+                            if(effL2 > 0) tempColor2.lerpColors(colorPinkAccent, colorGrayBase, effL2);
+                        }
+                        if (d <= 1) { 
+                            pHeight = THREE.MathUtils.lerp(pHeight, 4.5, effL3);
+                            if(effL3 > 0) tempColor2.lerpColors(colorGrayBase, colorGrayBase, effL3);
+                        }
+
+                        let nHeight = 0.5;
+                        const nodeIdx = nodes.findIndex(n => n.x === c.gridX && n.z === c.gridZ);
+                        
+                        if (nodeIdx !== -1) {
+                            let tRise = clamp((progress - T_NODES_RISE) / (T_LINES_APPEAR - T_NODES_RISE), 0, 1);
+                            tRise = 1 - Math.pow(1 - tRise, 3);
+                            
+                            let tLower = clamp((progress - T_NODES_LOWER) / (T_NODES_LOWER_END - T_NODES_LOWER), 0, 1);
+                            tLower = 1 - Math.pow(1 - tLower, 3); 
+                            
+                            let currentNHeight = THREE.MathUtils.lerp(0.5, nodes[nodeIdx].h, tRise);
+                            nHeight = THREE.MathUtils.lerp(currentNHeight, 0.5, tLower);
+                            
+                            let pulse = (Math.sin(time * 2.0 + nodeIdx) * 0.5 + 0.5);
+                            tempNodeColor.lerpColors(colorNodeAccent, colorNodeGlow, pulse);
+                            
+                            if (tLower > 0) {
+                                tempColor1.lerpColors(emissiveDark, tempNodeColor, tRise);
+                                tempNodeColor.lerpColors(tempColor1, emissiveDark, tLower);
+                            } else {
+                                tempNodeColor.lerpColors(emissiveDark, tempNodeColor, tRise);
+                            }
+                        }
+
+                        let sHeight = 0.5;
+                        const stairA = stairsA.find(s => s.x === c.gridX && s.z === c.gridZ);
+                        const stairB = stairsB.find(s => s.x === c.gridX && s.z === c.gridZ);
+                        const sDef = stairA || stairB;
+                        
+                        if (sDef) {
+                            let targetH = 0.5;
+                            if (progress >= T_STAIRS_START) {
+                                let lp = phase5BallTime % 20;
+                                if (sDef.seg === 'A') {
+                                    if (lp < 10) {
+                                        let grow = clamp(lp - sDef.idx + 2, 0, 1);
+                                        targetH = 0.5 + (sDef.h - 0.5) * grow;
+                                    } else {
+                                        let coll = clamp(lp - 10 - sDef.idx * 0.2, 0, 1);
+                                        targetH = sDef.h - (sDef.h - 0.5) * coll;
+                                    }
+                                } else {
+                                    if (lp >= 10) {
+                                        let grow = clamp(lp - 10 - sDef.idx + 2, 0, 1);
+                                        targetH = 0.5 + (sDef.h - 0.5) * grow;
+                                    } else {
+                                        let coll = clamp(lp - sDef.idx * 0.2, 0, 1);
+                                        targetH = sDef.h - (sDef.h - 0.5) * coll;
+                                    }
+                                }
+                            }
+                            
+                            sHeight = targetH;
+                            let colorIntensity = clamp((sHeight - 0.5) / (sDef.h - 0.5), 0, 1);
+                            tempStairColor.lerpColors(emissiveDark, stairTargetColors[sDef.idx], colorIntensity);
+                        }
+
+                        targetHeight = Math.max(pHeight, nHeight, sHeight);
+                        
+                        if (targetHeight === sHeight && sHeight > 0.5) c.mesh.material.emissive.copy(tempStairColor); 
+                        else if (targetHeight === nHeight && nHeight > 0.5) c.mesh.material.emissive.copy(tempNodeColor);
+                        else if (targetHeight === pHeight && pHeight > 0.5) c.mesh.material.emissive.copy(tempColor2); 
+                        else c.mesh.material.emissive.copy(emissiveDark);
+                    }
+
+                    // Apply the Phase 6 Collapse Flattening
+                    targetHeight *= gridCollapseScale;
+
+                    const h = Math.max(0.001, targetHeight);
+                    // Shrink uniformly into nothing during collapse
+                    c.mesh.scale.set(gridCollapseScale, h, gridCollapseScale);
+                    c.mesh.position.y = h / 2;
+                    c.currentHeight = h; 
+                });
+
+                // -----------------------------------------------------------------
+                // NETWORK LINES UPDATE 
+                // -----------------------------------------------------------------
+                if (progress >= T_NODES_RISE && progress < T_NODES_LOWER_END) {
+                    let tLinesIn = clamp((progress - T_LINES_APPEAR) / 0.05, 0, 1);
+                    let tLinesOut = clamp((progress - T_LINES_FADE) / 0.02, 0, 1);
+                    let opacityFactor = tLinesIn * (1 - tLinesOut);
+                    linesMesh.material.opacity = opacityFactor * (0.4 + Math.sin(time * 3) * 0.2); 
+
+                    const posArray = linesMesh.geometry.attributes.position.array;
+                    let i = 0;
+                    edges.forEach(edge => {
+                        const n1 = nodes[edge[0]];
+                        const n2 = nodes[edge[1]];
+                        const c1 = cubes.find(c => c.gridX === n1.x && c.gridZ === n1.z);
+                        const c2 = cubes.find(c => c.gridX === n2.x && c.gridZ === n2.z);
+                        const h1 = c1 ? c1.currentHeight : 0.5;
+                        const h2 = c2 ? c2.currentHeight : 0.5;
+
+                        posArray[i++] = (n1.x * spacing) - offset;
+                        posArray[i++] = h1;
+                        posArray[i++] = (n1.z * spacing) - offset;
+
+                        posArray[i++] = (n2.x * spacing) - offset;
+                        posArray[i++] = h2;
+                        posArray[i++] = (n2.z * spacing) - offset;
+                    });
+                    linesMesh.geometry.attributes.position.needsUpdate = true;
+                } else {
+                    linesMesh.material.opacity = 0;
+                }
+
+                // -----------------------------------------------------------------
+                // BALL LOGIC & PHYSICS
+                // -----------------------------------------------------------------
+                let targetBallX = 0;
+                let targetBallZ = 0;
+                let arcOffset = 0;
+
+                if (currentPhase === 1) {
+                    ballTime += delta;
+                    let ballRollTarget = 0;
+                    
+                    if (progress === 0) {
+                        const maxIdleProgress = worldPath.length * 0.2;
+                        ballRollTarget = (Math.sin(ballTime * 0.3) * 0.5 + 0.5) * maxIdleProgress;
+                    } else if (progress <= T_FLATTEN_END) {
+                        ballRollTarget = 0;
+                    } else if (progress <= T_ROLL_END) {
+                        let t = clamp((progress - T_ROLL_START) / (T_ROLL_END - T_ROLL_START), 0, 1);
+                        t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; 
+                        ballRollTarget = t * (worldPath.length - 1);
+                    } else {
+                        ballRollTarget = worldPath.length - 1;
+                    }
+
+                    // Super slow ball tracking during Phase 1
+                    currentBallProgress1 += (ballRollTarget - currentBallProgress1) * 0.04; 
+
+                    const index = Math.floor(currentBallProgress1);
+                    const nextIndex = Math.min(index + 1, worldPath.length - 1);
+                    const fraction = currentBallProgress1 - index;
+
+                    tempVec3.lerpVectors(worldPath[index], worldPath[nextIndex], fraction);
+                    targetBallX = tempVec3.x;
+                    targetBallZ = tempVec3.z;
+
+                    ball.rotation.x += (worldPath[nextIndex].z - worldPath[index].z) * fraction * 0.15;
+                    ball.rotation.z -= (worldPath[nextIndex].x - worldPath[index].x) * fraction * 0.15;
+
+                    // Ball transition drop off grid logic
+                    if (progress > T_ROLL_END && progress < T_TRANS1_MID) {
+                        let fallP = clamp((progress - T_ROLL_END) / (T_TRANS1_MID - T_ROLL_END), 0, 1);
+                        arcOffset -= 60 * Math.pow(fallP, 2); 
+                    } else if (progress >= T_TRANS1_MID && progress < T_TRANS1_MID + 0.05) {
+                        let dropP = clamp((progress - T_TRANS1_MID) / 0.03, 0, 1); 
+                        if (dropP < 1.0) {
+                            arcOffset += 60 * Math.pow(1 - dropP, 2);
+                        } else {
+                            let bounceP = clamp((progress - (T_TRANS1_MID + 0.03)) / 0.02, 0, 1); 
+                            arcOffset += Math.abs(Math.sin(bounceP * Math.PI)) * 2.5 * (1 - bounceP);
+                        }
+                    }
+                } 
+                else if (currentPhase === 2) {
+                    const wanderLocalX = Math.sin(time * 0.4) * (offset * 0.6);
+                    const wanderLocalZ = Math.cos(time * 0.3) * (offset * 0.6);
+
+                    const startLocalX = -offset + 2; 
+                    const startLocalZ = -offset + 2;
+
+                    const introRoll = clamp((progress - T_CARD1_IN) / 0.10, 0, 1);
+                    const smoothIntro = introRoll * introRoll * (3 - 2 * introRoll); 
+
+                    let activeLocalX = THREE.MathUtils.lerp(startLocalX, wanderLocalX, smoothIntro);
+                    let activeLocalZ = THREE.MathUtils.lerp(startLocalZ, wanderLocalZ, smoothIntro);
+
+                    targetBallX = activeLocalX + gridGroup.position.x;
+                    targetBallZ = activeLocalZ + gridGroup.position.z;
+
+                    ball.rotation.x += Math.cos(time * 0.3) * 0.05;
+                    ball.rotation.z -= Math.sin(time * 0.4) * 0.05;
+
+                    // Allow the landing bounce to overlap gracefully into phase 2 if scrolling fast
+                    if (progress < T_TRANS1_MID + 0.05) {
+                        let dropP = clamp((progress - T_TRANS1_MID) / 0.03, 0, 1); 
+                        if (dropP < 1.0) {
+                            arcOffset += 60 * Math.pow(1 - dropP, 2);
+                        } else {
+                            let bounceP = clamp((progress - (T_TRANS1_MID + 0.03)) / 0.02, 0, 1); 
+                            arcOffset += Math.abs(Math.sin(bounceP * Math.PI)) * 2.5 * (1 - bounceP);
+                        }
+                    }
+                }
+                else if (currentPhase === 3) {
+                    
+                    if (progress < T_DISSOLVE_L1) {
+                        const enterBaseProgress = clamp((progress - T_PYRAMID_START)/(T_LAYER1 - T_PYRAMID_START), 0, 1);
+                        
+                        let orbit_lx = 11, orbit_lz = 11;
+                        const orbitTime = time * 0.35; 
+                        const side = Math.floor(orbitTime % 4);
+                        const localFrac = orbitTime % 1;
+                        
+                        if (side === 0) { orbit_lx = 16 - 10 * localFrac; orbit_lz = 16; }
+                        if (side === 1) { orbit_lx = 6; orbit_lz = 16 - 10 * localFrac; }
+                        if (side === 2) { orbit_lx = 6 + 10 * localFrac; orbit_lz = 6; }
+                        if (side === 3) { orbit_lx = 16; orbit_lz = 6 + 10 * localFrac; }
+
+                        if (progress < T_ROLL_DOWN_START) {
+                            targetBallX = (11 * spacing) - offset + gridGroup.position.x;
+                            targetBallZ = (11 * spacing) - offset + gridGroup.position.z;
+                        } 
+                        else if (progress < T_ROLL_DOWN_END) {
+                            let rollFrac = clamp((progress - T_ROLL_DOWN_START)/(T_ROLL_DOWN_END - T_ROLL_DOWN_START), 0, 1);
+                            rollFrac = rollFrac * rollFrac * (3 - 2 * rollFrac);
+                            
+                            let curr_lx = THREE.MathUtils.lerp(11, orbit_lx, rollFrac);
+                            let curr_lz = THREE.MathUtils.lerp(11, orbit_lz, rollFrac);
+                            
+                            targetBallX = (curr_lx * spacing) - offset + gridGroup.position.x;
+                            targetBallZ = (curr_lz * spacing) - offset + gridGroup.position.z;
+                            
+                            ball.rotation.x += (orbit_lz - 11) * rollFrac * 0.05;
+                            ball.rotation.z -= (orbit_lx - 11) * rollFrac * 0.05;
+                        } 
+                        else {
+                            targetBallX = (orbit_lx * spacing) - offset + gridGroup.position.x;
+                            targetBallZ = (orbit_lz * spacing) - offset + gridGroup.position.z;
+                            
+                            if (side === 0) ball.rotation.z += 0.05; 
+                            if (side === 1) ball.rotation.x -= 0.05; 
+                            if (side === 2) ball.rotation.z -= 0.05; 
+                            if (side === 3) ball.rotation.x += 0.05; 
+                        }
+                        
+                    } else if (progress < T_NODES_LOWER) {
+                        const ballNodePath = [0, 3, 9, 11, 7, 5, 2, 1, 4, 8, 10, 6]; 
+                        
+                        const jumpTime = (time * 0.6);
+                        const jumpIdx = Math.floor(jumpTime) % ballNodePath.length;
+                        const nextJumpIdx = (jumpIdx + 1) % ballNodePath.length;
+                        let jumpFrac = jumpTime % 1;
+                        
+                        let easeFrac = clamp((jumpFrac - 0.2) / 0.6, 0, 1);
+                        easeFrac = easeFrac * easeFrac * (3 - 2 * easeFrac); 
+                        
+                        const n1 = nodes[ballNodePath[jumpIdx]];
+                        const n2 = nodes[ballNodePath[nextJumpIdx]];
+                        
+                        const lx = THREE.MathUtils.lerp(n1.x, n2.x, easeFrac);
+                        const lz = THREE.MathUtils.lerp(n1.z, n2.z, easeFrac);
+                        
+                        targetBallX = (lx * spacing) - offset + gridGroup.position.x;
+                        targetBallZ = (lz * spacing) - offset + gridGroup.position.z;
+                        
+                        ball.rotation.x += (n2.z - n1.z) * (jumpFrac * 0.01);
+                        ball.rotation.z -= (n2.x - n1.x) * (jumpFrac * 0.01);
+
+                        arcOffset += Math.sin(easeFrac * Math.PI) * 2.0; 
+                    } else {
+                        let lx = 0, lz = 0;
+                        if (progress < T_STAIRS_START) {
+                            let tToStairs = clamp((progress - T_NODES_LOWER) / (T_STAIRS_START - T_NODES_LOWER), 0, 1);
+                            tToStairs = tToStairs * tToStairs * (3 - 2 * tToStairs);
+                            
+                            lx = THREE.MathUtils.lerp(nodes[0].x, stairsA[0].x, tToStairs);
+                            lz = THREE.MathUtils.lerp(nodes[0].z, stairsA[0].z, tToStairs);
+                            phase5BallTime = 0;
+                        } else {
+                            phase5BallTime += delta * 4.0; 
+                            let lp = phase5BallTime % 20;
+                            
+                            if (lp < 8) {
+                                let idx = Math.floor(lp);
+                                let frac = lp - idx;
+                                lx = THREE.MathUtils.lerp(stairsA[idx].x, stairsA[idx+1].x, frac);
+                                lz = THREE.MathUtils.lerp(stairsA[idx].z, stairsA[idx+1].z, frac);
+                                ball.rotation.x += (stairsA[idx+1].z - stairsA[idx].z) * (frac * 0.05);
+                                ball.rotation.z -= (stairsA[idx+1].x - stairsA[idx].x) * (frac * 0.05);
+                            } else if (lp < 10) {
+                                let frac = (lp - 8) / 2.0;
+                                lx = THREE.MathUtils.lerp(stairsA[8].x, stairsB[0].x, frac);
+                                lz = THREE.MathUtils.lerp(stairsA[8].z, stairsB[0].z, frac);
+                                ball.rotation.x += (stairsB[0].z - stairsA[8].z) * (frac * 0.02);
+                                ball.rotation.z -= (stairsB[0].x - stairsA[8].x) * (frac * 0.02);
+                            } else if (lp < 18) {
+                                let idx = Math.floor(lp - 10);
+                                let frac = (lp - 10) - idx;
+                                lx = THREE.MathUtils.lerp(stairsB[idx].x, stairsB[idx+1].x, frac);
+                                lz = THREE.MathUtils.lerp(stairsB[idx].z, stairsB[idx+1].z, frac);
+                                ball.rotation.x += (stairsB[idx+1].z - stairsB[idx].z) * (frac * 0.05);
+                                ball.rotation.z -= (stairsB[idx+1].x - stairsB[idx].x) * (frac * 0.05);
+                            } else {
+                                let frac = (lp - 18) / 2.0;
+                                lx = THREE.MathUtils.lerp(stairsB[8].x, stairsA[0].x, frac);
+                                lz = THREE.MathUtils.lerp(stairsB[8].z, stairsA[0].z, frac);
+                                ball.rotation.x += (stairsA[0].z - stairsB[8].z) * (frac * 0.02);
+                                ball.rotation.z -= (stairsA[0].x - stairsB[8].x) * (frac * 0.02);
+                            }
+                        }
+                        targetBallX = (lx * spacing) - offset + gridGroup.position.x;
+                        targetBallZ = (lz * spacing) - offset + gridGroup.position.z;
+
+                        if (progress >= T_STAIRS_START && progress < T_COLLAPSE_START) {
+                            let lp = phase5BallTime % 20;
+                            if (lp >= 8 && lp < 10) {
+                                let jumpFrac = (lp - 8) / 2.0;
+                                arcOffset += Math.sin(jumpFrac * Math.PI) * 2.5; 
+                            } else if (lp >= 18 && lp < 20) {
+                                let jumpFrac = (lp - 18) / 2.0;
+                                arcOffset += Math.sin(jumpFrac * Math.PI) * 2.5; 
+                            }
+                        }
+                    }
+                }
+
+                ball.position.x += (targetBallX - ball.position.x) * 0.2;
+                ball.position.z += (targetBallZ - ball.position.z) * 0.2;
+
+                const localBallX = ball.position.x - gridGroup.position.x;
+                const localBallZ = ball.position.z - gridGroup.position.z;
+                
+                let gridX = Math.round((localBallX + offset) / spacing);
+                let gridZ = Math.round((localBallZ + offset) / spacing);
+                
+                gridX = clamp(gridX, 0, gridSize - 1);
+                gridZ = clamp(gridZ, 0, gridSize - 1);
+                
+                const cubeBeneath = cubes.find(c => c.gridX === gridX && c.gridZ === gridZ);
+                const surfaceY = cubeBeneath ? cubeBeneath.currentHeight : 1.0;
+
+                let targetY = surfaceY + ballRadius + gridGroup.position.y;
+                
+                const isFallingPhase6 = (progress >= T_COLLAPSE_START);
+                if (isFallingPhase6) {
+                    ball.scale.setScalar(Math.max(0.001, gridCollapseScale));
+                    ballLight.intensity = 0.8 * gridCollapseScale;
+                } else {
+                    ball.scale.setScalar(1.0);
+                    ballLight.intensity = 0.8;
+                }
+
+                const isElevator = (progress >= T_ELEVATOR_START && progress <= T_ELEVATOR_END);
+                const isFallingPhase1 = (progress > T_ROLL_END && progress < T_TRANS1_MID);
+                const yLerpSpeed = (isElevator || isFallingPhase1 || isFallingPhase6) ? 0.9 : 0.15; 
+
+                ball.position.y += ((targetY + arcOffset) - ball.position.y) * yLerpSpeed;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+        };
+    </script>
+</body>
+</html>
